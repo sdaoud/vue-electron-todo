@@ -1,9 +1,13 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "path";
 import { fileURLToPath } from "url";
+import Store from "electron-store";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize electron-store
+const store = new Store();
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -23,6 +27,15 @@ function createWindow() {
     win.loadFile(path.join(__dirname, "dist/index.html"));
   }
 }
+
+// Set up IPC handlers for todo persistence
+ipcMain.handle("load-todos", () => {
+  return store.get("todos", []);
+});
+
+ipcMain.handle("save-todos", (event, todos) => {
+  store.set("todos", todos);
+});
 
 app.whenReady().then(() => {
   createWindow();

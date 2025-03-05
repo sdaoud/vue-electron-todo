@@ -40,10 +40,24 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
+const { ipcRenderer } = window.require("electron");
 const todos = ref([]);
 const newTodo = ref("");
+
+// Load todos when the component mounts
+onMounted(async () => {
+  todos.value = await ipcRenderer.invoke("load-todos");
+});
+
+// Save todos whenever they change
+const saveTodos = async () => {
+  await ipcRenderer.invoke(
+    "save-todos",
+    JSON.parse(JSON.stringify(todos.value))
+  );
+};
 
 const addTodo = () => {
   if (newTodo.value.trim()) {
@@ -53,6 +67,7 @@ const addTodo = () => {
       completed: false,
     });
     newTodo.value = "";
+    saveTodos();
   }
 };
 
@@ -60,11 +75,13 @@ const toggleTodo = (id) => {
   const todo = todos.value.find((t) => t.id === id);
   if (!todo) return;
   todo.completed = !todo.completed;
+  saveTodos();
 };
 
 const deleteTodo = (id) => {
   const todoIndex = todos.value.findIndex((t) => t.id === id);
   if (todoIndex === -1) return;
   todos.value.splice(todoIndex, 1);
+  saveTodos();
 };
 </script>
